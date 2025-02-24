@@ -49,11 +49,16 @@ Plot/
 │   ├── exceptions.py    # 异常定义
 │   └── utils/           # 工具函数
 ├── static_plot/         # 静态绘图模块
-│   ├── base.py         # 绘图基础类
-│   ├── plotter.py      # 绘图器实现
-│   ├── style.py        # 样式系统
-│   ├── config.py       # 绘图配置
-│   └── validators.py   # 验证器
+│   ├── base/           # 基础组件
+│   │   ├── base_plotter.py  # 基础绘图器
+│   │   ├── base_config.py   # 基础配置系统
+│   │   ├── base_style.py    # 基础样式系统
+│   │   └── validators.py    # 数据和配置验证
+│   ├── box_plot/       # 箱型图组件
+│   │   ├── box_config.py    # 箱型图配置
+│   │   ├── box_plotter.py   # 箱型图绘制器
+│   │   └── box_style.py     # 箱型图样式
+│   └── other_plots/    # 其他图表类型（未来扩展）
 └── requirements.txt    # 依赖包列表
 ```
 
@@ -97,8 +102,8 @@ from data_processing.config import ProcessorConfig
 from data_processing.processor import TableFileProcessor
 from data_processing.utils.statistics import StatisticsCalculator
 from data_processing.utils.formatters import BoxPlotFormatter
-from static_plot.config import BoxPlotConfig
-from static_plot.plotter import BoxPlotter
+from static_plot.box_plot.box_config import BoxPlotConfig
+from static_plot.box_plot.box_plotter import BoxPlotter
 
 # 1. 数据处理配置
 processor_config = ProcessorConfig(
@@ -121,8 +126,24 @@ with TableFileProcessor(processor_config, formatter) as processor:
 # 3. 绘图配置
 plot_config = BoxPlotConfig()
 plot_config.style.update({
-    "style": "ticks",
-    "context": "paper"
+    "style": "ticks",     # 使用刻度样式
+    "context": "paper",   # 使用论文样式
+    "font_params": {      # 设置字体参数
+        "family": "Arial",
+        "size": 8
+    },
+    "rc_params": {        # 自定义RC参数
+        "axes.linewidth": 0.8,
+        "xtick.major.width": 0.8,
+        "ytick.major.width": 0.8
+    }
+})
+
+# 设置箱型图特定参数
+plot_config.box_params.update({
+    "width": 0.5,         # 箱体宽度
+    "notch": False,       # 不显示凹槽
+    "showfliers": True    # 显示异常值
 })
 
 # 4. 绘图

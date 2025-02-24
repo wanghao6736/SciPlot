@@ -18,7 +18,7 @@ matplotlib.use('Agg')  # 设置后端为Agg
 import matplotlib.pyplot as plt
 import numpy as np
 
-from static_plot.config import BasePlotConfig, StyleConfig
+from static_plot.base.base_config import BasePlotConfig, StyleConfig
 
 
 def test_basic_font():

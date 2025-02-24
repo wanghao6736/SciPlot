@@ -8,7 +8,8 @@ from typing import Any, Dict
 
 import numpy as np
 
-from static_plot.config import BasePlotConfig, BoxPlotConfig
+from static_plot.base.base_config import BasePlotConfig
+from static_plot.box_plot.box_config import BoxPlotConfig
 
 
 class ConfigValidator:

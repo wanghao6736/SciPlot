@@ -26,24 +26,31 @@
 ### 2.1 整体架构
 ```
 static_plot/
-├── base.py       # 基础抽象类和标准流程
-├── plotter.py    # 具体绘图器实现
-├── style.py      # 样式管理系统
-├── config.py     # 配置管理系统
-└── validators.py # 数据和配置验证
+├── base/                 # 基础组件
+│   ├── base_plotter.py  # 基础绘图器
+│   ├── base_config.py   # 基础配置系统
+│   ├── base_style.py    # 基础样式系统
+│   └── validators.py    # 数据和配置验证
+├── box_plot/            # 箱型图组件
+│   ├── box_config.py    # 箱型图配置
+│   ├── box_plotter.py   # 箱型图绘制器
+│   └── box_style.py     # 箱型图样式
+└── other_plots/         # 其他图表类型（未来扩展）
 ```
 
 ### 2.2 核心组件关系
 ```
-BasePlotter (基础绘图器)
-    ├── 调用 -> BaseStyleManager (基础样式管理)
-    ├── 使用 -> ConfigValidator (配置验证)
-    └── 使用 -> DataValidator (数据验证)
+基础组件 (base/)
+    BasePlotter (base_plotter.py)
+    ├── 使用 -> BaseConfig (base_config.py)
+    ├── 调用 -> BaseStyleManager (base_style.py)
+    └── 使用 -> Validators (validators.py)
 
-BoxPlotter (箱型图绘图器)
+箱型图组件 (box_plot/)
+    BoxPlotter (box_plotter.py)
     ├── 继承 -> BasePlotter
-    ├── 调用 -> BoxStyleManager (箱型图样式管理)
-    └── 使用 -> BoxPlotConfig (箱型图配置)
+    ├── 使用 -> BoxPlotConfig (box_config.py)
+    └── 调用 -> BoxStyleManager (box_style.py)
 ```
 
 ### 2.3 数据流
@@ -56,34 +63,51 @@ BoxPlotter (箱型图绘图器)
 
 ## 3. 组件说明
 
-### 3.1 基础绘图器 (BasePlotter)
-- 定义标准绘图流程
-- 提供资源管理机制
-- 实现异常处理框架
-- 管理图形生命周期
+### 3.1 基础组件 (base/)
+- **基础绘图器** (base_plotter.py)
+  - 定义标准绘图流程
+  - 提供资源管理机制
+  - 实现异常处理框架
+  - 管理图形生命周期
 
-### 3.2 样式管理器 (StyleManager)
-- 控制图形视觉效果
-- 管理样式参数
-- 提供样式应用机制
-- 支持样式继承和扩展
+- **基础配置** (base_config.py)
+  - 定义配置基类
+  - 提供配置继承机制
+  - 实现配置验证
+  - 支持配置模板
 
-### 3.3 配置系统 (Config)
-- 管理绘图参数
-- 提供参数验证
-- 支持配置模板
-- 实现配置继承
+- **基础样式** (base_style.py)
+  - 定义样式管理基类
+  - 提供样式继承机制
+  - 实现基础样式应用
+  - 支持样式扩展
 
-### 3.4 验证器 (Validators)
-- 确保数据格式正确
-- 验证配置有效性
-- 提供错误提示
-- 支持自定义验证
+### 3.2 箱型图组件 (box_plot/)
+- **箱型图配置** (box_config.py)
+  - 继承基础配置
+  - 定义箱型图参数
+  - 提供参数验证
+  - 支持样式定制
+
+- **箱型图绘制器** (box_plotter.py)
+  - 继承基础绘图器
+  - 实现箱型图绘制
+  - 处理特定样式
+  - 管理数据转换
+
+- **箱型图样式** (box_style.py)
+  - 继承基础样式
+  - 实现特定样式
+  - 处理分组样式
+  - 管理颜色方案
 
 ## 4. 使用指南
 
 ### 4.1 基本使用流程
 ```python
+from static_plot.box_plot.box_config import BoxPlotConfig
+from static_plot.box_plot.box_plotter import BoxPlotter
+
 # 1. 创建配置
 config = BoxPlotConfig()
 
@@ -158,48 +182,113 @@ with BoxPlotter(config) as plotter:
 
 ## 5. 扩展开发指南
 
-### 5.1 创建新的绘图器
-1. 继承 BasePlotter
-2. 实现必要的抽象方法
-3. 添加特定的样式处理
-4. 创建对应的配置类
+### 5.1 创建新的图表类型
+1. 创建新的图表目录
+   ```
+   static_plot/
+   └── new_plot/
+       ├── new_config.py
+       ├── new_plotter.py
+       └── new_style.py
+   ```
 
-### 5.2 扩展样式系统
-1. 继承 BaseStyleManager
-2. 添加新的样式参数
-3. 实现样式应用方法
-4. 更新配置验证
+2. 实现必要的类
+   ```python
+   # new_config.py
+   from static_plot.base.base_config import BasePlotConfig
+   
+   class NewPlotConfig(BasePlotConfig):
+       pass
+   
+   # new_plotter.py
+   from static_plot.base.base_plotter import BasePlotter
+   
+   class NewPlotter(BasePlotter):
+       pass
+   
+   # new_style.py
+   from static_plot.base.base_style import BaseStyleManager
+   
+   class NewStyleManager(BaseStyleManager):
+       pass
+   ```
 
-### 5.3 最佳实践
-- 保持配置的向后兼容性
-- 确保资源正确释放
-- 提供完整的参数验证
-- 添加详细的错误提示
+### 5.2 开发规范
+- 遵循基类接口规范
+- 实现必要的抽象方法
+- 提供完整的单元测试
+- 编写详细的文档说明
 
-## 6. 常见问题
+## 6. 注意事项
 
-### 6.1 样式调整
+### 6.1 导入路径
+- 使用绝对导入
+- 避免循环依赖
+- 保持导入层次清晰
+- 遵循模块化原则
+
+### 6.2 配置继承
+- 遵循基类约定
+- 保持向后兼容
+- 验证配置有效性
+- 文档化新增参数
+
+### 6.3 样式管理
+- 基础样式优先
+- 特定样式补充
+- 避免样式冲突
+- 保持风格一致
+
+## 7. 版本兼容性
+
+### 7.1 依赖要求
+- Python >= 3.7
+- matplotlib >= 3.3.0
+- seaborn >= 0.11.0
+
+### 7.2 版本特性
+- v0.1.0: 基础功能实现
+- v0.2.0: 模块化重构
+- v0.3.0: 样式系统优化
+
+## 8. 开发计划
+
+### 8.1 近期计划
+- [ ] 完善基础组件文档
+- [ ] 添加散点图支持
+- [ ] 添加误差线图支持
+- [ ] 优化样式系统
+
+### 8.2 长期目标
+- [ ] 支持更多图表类型
+- [ ] 提供图表组合功能
+- [ ] 增加交互式调整
+- [ ] 优化性能
+
+## 9. 常见问题
+
+### 9.1 样式调整
 - Q: 如何调整图表尺寸？
 - A: 通过修改 `config.style.figsize` 参数
 
-### 6.2 数据处理
+### 9.2 数据处理
 - Q: 如何处理异常值？
 - A: 通过配置 `box_params.showfliers` 控制
 
-### 6.3 布局优化
+### 9.3 布局优化
 - Q: 如何处理标签重叠？
 - A: 调整 `figsize` 或使用 `tick_params`
   
-### 6.4 字体设置
+### 9.4 字体设置
 - Q: 如何设置字体？
 - A: 通过修改 `config.style.rc_params` 参数，参考[seaborn issue 1009][seaborn_issue_1009]
   ```python
   sns.set_theme(rc=self.config.style.rc_params)
   ```
 
-## 7. 重要注意事项
+## 10. 重要注意事项
 
-### 7.1 样式系统依赖关系
+### 10.1 样式系统依赖关系
 - **基础样式与参数的关系**：
   ```python
   # 正确的使用方式
@@ -222,7 +311,7 @@ with BoxPlotter(config) as plotter:
   | tick_params | ticks | 需要先启用刻度样式 |
   | spine_* | white/ticks | 边框参数在这些样式下生效 |
 
-### 7.2 样式优先级
+### 10.2 样式优先级
 - **样式应用顺序**：
   1. 基础样式 (style)
   2. 上下文设置 (context)
@@ -246,7 +335,7 @@ with BoxPlotter(config) as plotter:
   })
   ```
 
-### 7.3 资源管理注意事项
+### 10.3 资源管理注意事项
 - **内存管理**：
   ```python
   # 推荐：使用上下文管理器
@@ -264,7 +353,7 @@ with BoxPlotter(config) as plotter:
       plotter.cleanup()  # 容易忘记清理
   ```
 
-### 7.4 配置继承注意事项
+### 10.4 配置继承注意事项
 - **参数覆盖规则**：
   ```python
   # 基类配置
@@ -278,7 +367,7 @@ with BoxPlotter(config) as plotter:
   box_config.style.font_params["size"] = 8
   ```
 
-### 7.5 数据验证注意事项
+### 10.5 数据验证注意事项
 - **数据格式检查**：
   ```python
   # 正确的数据格式
@@ -298,7 +387,7 @@ with BoxPlotter(config) as plotter:
   }
   ```
 
-### 7.6 性能优化注意事项
+### 10.6 性能优化注意事项
 - **大数据集处理**：
   ```python
   # 推荐：数据量大时进行采样
@@ -314,31 +403,7 @@ with BoxPlotter(config) as plotter:
   sampled_values = {k: sample_data(v) for k, v in data["values"].items()}
   ```
 
-## 8. 版本兼容性
-
-### 8.1 依赖要求
-- Python >= 3.7
-- matplotlib >= 3.3.0
-- seaborn >= 0.11.0
-
-### 8.2 版本特性
-- v1.0: 基础功能实现
-- v1.1: 添加箱型图支持
-- v1.2: 样式系统优化
-
-## 9. 开发计划
-
-### 9.1 近期计划
-- [ ] 添加更多图表类型
-- [ ] 优化样式系统
-- [ ] 提供更多模板
-
-### 9.2 长期目标
-- [ ] 支持交互式调整
-- [ ] 添加批处理能力
-- [ ] 提供更多自定义选项 
-
-## 10. 参考资料
+## 11. 参考资料
 - [seaborn documentation][seaborn_doc]
 - [matplotlib documentation][matplotlib_doc]
 - [seaborn issue 1009][seaborn_issue_1009]

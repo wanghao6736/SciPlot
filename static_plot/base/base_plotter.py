@@ -13,9 +13,9 @@ from typing import Any, Dict, Optional, Union
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from static_plot.config import BasePlotConfig
-from static_plot.style import BaseStyleManager
-from static_plot.validators import ConfigValidator
+from static_plot.base.base_config import BasePlotConfig
+from static_plot.base.base_style import BaseStyleManager
+from static_plot.base.validators import ConfigValidator
 
 
 class BasePlotter(ABC):

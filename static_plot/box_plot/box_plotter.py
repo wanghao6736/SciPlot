@@ -8,10 +8,10 @@ from typing import Any, Dict, List, Optional
 
 import seaborn as sns
 
-from static_plot.base import BasePlotter
-from static_plot.config import BoxPlotConfig
-from static_plot.style import BoxStyleManager
-from static_plot.validators import ConfigValidator, DataValidator
+from static_plot.base.base_plotter import BasePlotter
+from static_plot.box_plot.box_config import BoxPlotConfig
+from static_plot.box_plot.box_style import BoxStyleManager
+from static_plot.base.validators import ConfigValidator, DataValidator
 
 
 class BoxPlotter(BasePlotter):
