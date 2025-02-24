@@ -1,0 +1,16 @@
+.vscode/**
+.pytest_cache/**
+__pycache__/**
+output/**
+
+.DS_Store
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+
+examples/test_xls_csv.ipynb
+examples/test_box_plot.py
+
+# 交互式绘图待实现
+interactive_plot/
