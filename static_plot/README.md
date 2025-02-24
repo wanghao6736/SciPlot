@@ -189,6 +189,13 @@ with BoxPlotter(config) as plotter:
 ### 6.3 布局优化
 - Q: 如何处理标签重叠？
 - A: 调整 `figsize` 或使用 `tick_params`
+  
+### 6.4 字体设置
+- Q: 如何设置字体？
+- A: 通过修改 `config.style.rc_params` 参数，参考[seaborn issue 1009][seaborn_issue_1009]
+  ```python
+  sns.set_theme(rc=self.config.style.rc_params)
+  ```
 
 ## 7. 重要注意事项
 
@@ -330,3 +337,12 @@ with BoxPlotter(config) as plotter:
 - [ ] 支持交互式调整
 - [ ] 添加批处理能力
 - [ ] 提供更多自定义选项 
+
+## 10. 参考资料
+- [seaborn documentation][seaborn_doc]
+- [matplotlib documentation][matplotlib_doc]
+- [seaborn issue 1009][seaborn_issue_1009]
+
+[seaborn_doc]: https://seaborn.pydata.org/api.html
+[matplotlib_doc]: https://matplotlib.org/stable/api/index.html
+[seaborn_issue_1009]: https://github.com/mwaskom/seaborn/issues/1009

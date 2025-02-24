@@ -369,11 +369,10 @@ class BasePlotter(ABC):
             
             save_path.parent.mkdir(parents=True, exist_ok=True)
             
+            self.config.output_params.pop("path")
             self.fig.savefig(
                 save_path,
-                format=self.config.output_params["format"],
-                dpi=self.config.output_params["dpi"],
-                bbox_inches="tight"
+                **self.config.output_params
             )
         except Exception as e:
             raise RuntimeError(f"保存图形失败: {str(e)}")

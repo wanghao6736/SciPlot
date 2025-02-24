@@ -71,8 +71,8 @@ class StyleConfig:
     
     # 刻度设置
     tick_direction: str = "in"  # 刻度向内，专业期刊常用样式
-    tick_width: float = 0.6  # 刻度线宽，略细于边框
-    tick_length: float = 3.0  # 刻度长度，确保可见性
+    tick_width: float = 0.5  # 刻度线宽，略细于边框
+    tick_length: float = 2.0  # 刻度长度，确保可见性
     tick_color: str = "black"  # 刻度颜色，与边框一致
     minor_ticks: bool = False  # 不显示次刻度，减少视觉干扰
     minor_tick_width: float = 0.4  # 次刻度线宽，细于主刻度
@@ -189,6 +189,8 @@ class BasePlotConfig:
     output_params: Dict[str, Any] = field(default_factory=lambda: {
         "format": "pdf",  # 输出格式，默认PDF
         "dpi": 300,  # 输出分辨率，适合印刷
+        "transparent": True,  # 透明背景
+        "bbox_inches": "tight",  # 裁剪空白区域
         "path": None  # 输出路径，None表示需要手动指定
     })
     
