@@ -4,12 +4,13 @@
 """
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import yaml
 
+from data_processing.utils.curve_simpler import CurveData, CurveSimplifier
 from data_processing.utils.statistics import StatisticsCalculator
 
 
@@ -18,6 +19,9 @@ class DataFormatter(ABC):
     
     定义了数据格式化的标准接口，支持将数据转换为特定格式。
     所有具体的格式化器都应继承自此类并实现其抽象方法。
+    
+    Attributes:
+        _stats_calculator (StatisticsCalculator): 统计计算器
     
     Example:
         ```python
@@ -34,6 +38,7 @@ class DataFormatter(ABC):
     """
     
     def __init__(self):
+        """初始化格式化器"""
         self._stats_calculator = StatisticsCalculator()
     
     @abstractmethod
@@ -328,4 +333,196 @@ class CompositeFormatter(DataFormatter):
         return {
             name: formatter.format(data)
             for name, formatter in self.formatters.items()
-        } 
+        }
+
+class ParticleSizeFormatter(DataFormatter):
+    """粒径分布格式化器
+    
+    将表格数据转换为粒径分布数据格式，支持两种输入形式：
+    1. 粒径和密度数据 -> 计算累积分布
+    2. 粒径和累积分布数据 -> 直接使用
+    
+    同时支持曲线简化和区间分布计算。
+    
+    Attributes:
+        diameter_column (str): 粒径列名
+        density_column (Optional[str]): 密度列名，可选
+        cumulative_column (Optional[str]): 累积分布列名，可选
+        simplify_curve (bool): 是否简化曲线
+        target_ncc (float): 目标NCC值
+    """
+    
+    def __init__(
+        self,
+        diameter_column: str,
+        density_column: Optional[str] = None,
+        cumulative_column: Optional[str] = None,
+        simplify_curve: bool = True,
+        target_ncc: float = 0.998
+    ):
+        """初始化格式化器
+        
+        Args:
+            diameter_column: 粒径列名
+            density_column: 密度列名，可选
+            cumulative_column: 累积分布列名，可选
+            simplify_curve: 是否简化曲线
+            target_ncc: 目标NCC值
+        """
+        super().__init__()
+        self.diameter_column = diameter_column
+        self.density_column = density_column
+        self.cumulative_column = cumulative_column
+        self.simplify_curve = simplify_curve
+        self._simplifier = CurveSimplifier(target_ncc=target_ncc)
+    
+    def _calculate_mass_distribution(self, 
+                                   diameters: np.ndarray,
+                                   density: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+        """计算质量分布
+        
+        Args:
+            diameters: 已排序的粒径数组
+            density: 密度数组，可选
+            
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: (合并后的直径数组, 累积分布数组)
+        """
+        # 计算体积(假设球形)
+        volumes = (4/3) * np.pi * (diameters/2)**3
+        
+        # 计算质量
+        masses = volumes * density if density is not None else volumes
+        
+        # 合并相同直径颗粒并计算占比
+        unique_diameters, indices = np.unique(diameters, return_inverse=True)
+        combined_masses = np.zeros_like(unique_diameters)
+        np.add.at(combined_masses, indices, masses)
+        
+        # 计算体积占比
+        total_mass = np.sum(combined_masses)
+        if total_mass > 0:
+            volume_fraction = combined_masses / total_mass
+        else:
+            volume_fraction = np.zeros_like(combined_masses)
+        
+        # 计算累积分布
+        cumulative = np.cumsum(volume_fraction) * 100  # 转换为百分比
+        return unique_diameters, cumulative
+    
+    def format(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """格式化数据
+        
+        Args:
+            data: 包含数据的字典
+            
+        Returns:
+            Dict[str, Any]: 标准格式的数据字典
+        """
+        try:
+            # 1. 数据验证
+            if "data" not in data:
+                raise ValueError("Invalid data format: missing 'data' key")
+            
+            available_columns = list(data["data"].keys())
+            required_columns = [self.diameter_column]
+            if self.density_column:
+                required_columns.append(self.density_column)
+            if self.cumulative_column:
+                required_columns.append(self.cumulative_column)
+            
+            missing = [col for col in required_columns if col not in data["data"]]
+            if missing:
+                raise ValueError(f"Missing columns: {', '.join(missing)}. Available: {', '.join(available_columns)}")
+            
+            # 2. 数据读取和清理
+            diameters = np.array(data["data"][self.diameter_column], dtype=np.float64)
+            valid_mask = ~np.isnan(diameters)
+            diameters = diameters[valid_mask]
+            
+            if len(diameters) == 0:
+                raise ValueError("No valid data points after cleaning")
+            
+            # 3. 计算或处理累积分布
+            if self.cumulative_column:
+                # 处理已知累积分布
+                cumulative = np.array(data["data"][self.cumulative_column], dtype=np.float64)[valid_mask]
+                valid_mask = ~np.isnan(cumulative)
+                diameters = diameters[valid_mask]
+                cumulative = cumulative[valid_mask]
+                
+                # 排序并合并相同直径的累积分布
+                sort_idx = np.argsort(diameters)
+                diameters = diameters[sort_idx]
+                cumulative = cumulative[sort_idx]
+                
+                # 合并相同直径的值（取平均）
+                unique_diameters, unique_idx = np.unique(diameters, return_index=True)
+                unique_cumulative = np.array([
+                    np.mean(cumulative[diameters == d]) for d in unique_diameters
+                ])
+                diameters, cumulative = unique_diameters, unique_cumulative
+            else:
+                # 计算累积分布
+                density = None
+                if self.density_column:
+                    density = np.array(data["data"][self.density_column], dtype=np.float64)[valid_mask]
+                    valid_mask = ~np.isnan(density)
+                    diameters = diameters[valid_mask]
+                    density = density[valid_mask]
+                
+                # 排序并计算分布
+                sort_idx = np.argsort(diameters)
+                diameters = diameters[sort_idx]
+                if density is not None:
+                    density = density[sort_idx]
+                
+                # 计算累积分布（返回合并后的直径和分布）
+                diameters, cumulative = self._calculate_mass_distribution(diameters, density)
+            
+            # 4. 曲线简化（如果需要）
+            if self.simplify_curve and len(diameters) > 100:
+                curve_data = CurveData(x=diameters, y=cumulative)
+                simplified = self._simplifier.simplify(curve_data)
+                diameters = simplified.x
+                cumulative = simplified.y
+            
+            # 5. 计算区间分布
+            interval = np.diff(cumulative)
+            interval = np.concatenate(([cumulative[0]], interval))
+            
+            # 6. 计算统计量
+            stats_dict = {
+                "basic": {
+                    "diameter": self._stats_calculator.calculate_basic_stats(diameters),
+                    "cumulative": self._stats_calculator.calculate_basic_stats(cumulative),
+                    "interval": self._stats_calculator.calculate_basic_stats(interval)
+                },
+                "distribution": self._stats_calculator.calculate_distribution_stats(diameters),
+                "characteristic": self._stats_calculator.calculate_characteristic_diameters(diameters, cumulative)
+            }
+            
+            # 7. 返回标准格式
+            return {
+                "type": "particle_size",
+                "data": {
+                    "diameter": diameters.tolist(),
+                    "cumulative": cumulative.tolist(),
+                    "interval": interval.tolist()
+                },
+                "metadata": {
+                    "x_label": "粒径",
+                    "y_label": "累积百分比",
+                    "x_unit": "mm",
+                    "y_unit": "%",
+                    "num_points": len(diameters),
+                    "diameter_range": {
+                        "min": float(diameters.min()),
+                        "max": float(diameters.max())
+                    }
+                },
+                "statistics": stats_dict
+            }
+            
+        except Exception as e:
+            raise ValueError(f"Format error: {str(e)}") 

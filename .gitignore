@@ -11,6 +11,7 @@ output/**
 
 examples/test_xls_csv.ipynb
 examples/test_box_plot.py
+examples/test_psd_plot.py
 
 # 交互式绘图待实现
 interactive_plot/
